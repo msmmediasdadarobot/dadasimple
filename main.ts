@@ -12,6 +12,8 @@ namespace msmSmartTools {
     let petiteVitesse = 33
 
     let ID_CUBE = 1
+    let X_MIN = 80
+    let X_MAX = 240
     let Y_APPROCHE = 237
     let SEUIL_VALIDATION = 8
     let compteurStable = 0
@@ -92,10 +94,18 @@ namespace msmSmartTools {
 
         if (capteur2 && capteur3) {
             avancer(vitesseToutDroit)
+        } else if (capteur1 && capteur2) {
+            tournerAGauche(vitesseCorrection)
+        } else if (capteur3 && capteur4) {
+            tournerADroite(vitesseCorrection)
         } else if (capteur1) {
             tournerAGauche(vitesseCorrection)
         } else if (capteur4) {
             tournerADroite(vitesseCorrection)
+        } else if (capteur2) {
+            tournerAGauche(petiteVitesse)
+        } else if (capteur3) {
+            tournerADroite(petiteVitesse)
         } else {
             avancer(petiteVitesse)
         }
@@ -109,7 +119,9 @@ namespace msmSmartTools {
     }
 
     function detectionStable(): boolean {
-        if (wondercam.isDetectedColorId(ID_CUBE)) {
+        let x = wondercam.XOfColorId(wondercam.Options.Pos_X, ID_CUBE)
+
+        if (wondercam.isDetectedColorId(ID_CUBE) && x >= X_MIN && x <= X_MAX) {
             compteurStable += 1
         } else {
             compteurStable = 0
@@ -137,6 +149,11 @@ namespace msmSmartTools {
 
         while (timeout < 200) {
             wondercam.UpdateResult()
+
+            if (!(wondercam.isDetectedColorId(ID_CUBE))) {
+                break
+            }
+
             suiviDeLigne()
 
             let y = wondercam.XOfColorId(wondercam.Options.Pos_Y, ID_CUBE)
@@ -170,6 +187,7 @@ namespace msmSmartTools {
     //% group="Manipulation"
     export function attraperCube(): void {
         arreterRobot()
+        basic.pause(300)
         brasEnBas()
         basic.pause(TEMPS_ATTENTE)
         fermerPince()
@@ -181,6 +199,7 @@ namespace msmSmartTools {
     //% block="déposer le cube"
     //% group="Manipulation"
     export function deposerCube(): void {
+        arreterRobot()
         brasEnBas()
         basic.pause(TEMPS_ATTENTE)
         ouvrirPince()
@@ -211,13 +230,16 @@ namespace msmSmartTools {
             deposerCube()
         }
 
+        reculer(petiteVitesse)
+        basic.pause(300)
+
         let timeout = 0
 
         while (timeout < 150) {
             mettreAJourCapteursLigne()
             tournerADroite(vitesseCorrection)
 
-            if (capteur3 && capteur4) {
+            if (capteur3 && capteur4 && !(capteur1 || capteur2)) {
                 break
             }
 
@@ -230,6 +252,7 @@ namespace msmSmartTools {
     //% group="Mission"
     export function cycleMission(): void {
         if (modeMission == 0 && cubeDetecteStable()) {
+            arreterRobot()
             jouerBip()
             approcherCube()
             attraperCube()
@@ -242,7 +265,7 @@ namespace msmSmartTools {
         }
     }
 
-    //% block="régler v1 %v1 v2 %v2 v3 %v3"
+    //% block="régler vitesses v1 %v1 v2 %v2 v3 %v3"
     //% v1.defl=55
     //% v2.defl=44
     //% v3.defl=33
@@ -264,9 +287,10 @@ namespace msmSmartTools {
     //% block="initialiser la mission"
     //% group="Réglages"
     export function resetMission(): void {
-        if (modeMission == 1) {
-            deposerCube()
-        }
         modeMission = 0
+        compteurStable = 0
+        brasEnHaut()
+        ouvrirPince()
+        arreterRobot()
     }
 }
