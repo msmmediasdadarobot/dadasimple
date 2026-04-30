@@ -5,7 +5,7 @@ Extension MakeCode (micro:bit) pour le robot **DaDa:bit** (Hiwonder) avec la **W
 - **Mouvements** (avancer / reculer / tourner gauche / tourner droite / arrêter)
 - **Manipulation** (attraper / déposer via bras + pince servos)
 - **Vision** (détection stable couleur ID + approche par seuil Y)
-- **Mission** (cycle automatique : détecter → attraper → livrer → déposer)
+- **Mission** (cycle automatique : détecter → attraper → livrer → déposer) 
 - **Réglages** (vitesses, vision, reset mission)
 
 ---
