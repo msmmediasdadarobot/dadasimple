@@ -6,7 +6,7 @@
   "dependencies": {
     "core": "*",
     "microbit": "*",
-    "dadabit": "github.com/msmmediasdadarobot/dadarobot"
+    "dadabit": "github:msmmediasdadarobot/dadarobot"
   },
   "files": [
     "main.ts"
