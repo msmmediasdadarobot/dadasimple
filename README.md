@@ -1,117 +1,122 @@
-# msmdadabit — MSM AI Handler (DaDa:bit + WonderCam)
+# msmdadabit — MSM Smart Tools (DaDa:bit + WonderCam)
 
-Extension MakeCode (micro:bit) pour le robot **DaDa:bit** (Hiwonder) avec la **WonderCam**, dédiée au projet **AI Handler** :
-- **Suivi de ligne** (4 capteurs) — mode compétition (robuste & testé)
-- **Mouvements simples** (avancer / reculer / tourner / pivoter / demi-tour)
-- **Bras** (attraper / déposer / position départ)
-- **Vision** (détection couleur ID + centrage + approche)
-- **Macros** (cycles utiles, y compris “sans caméra”)
+Extension MakeCode (micro:bit) pour le robot **DaDa:bit** (Hiwonder) avec la **WonderCam**, dédiée au projet **MSM Smart Tools** :
+- **Suivi de ligne** (4 capteurs S1–S4) — robuste et testé
+- **Mouvements** (avancer / reculer / tourner gauche / tourner droite / arrêter)
+- **Manipulation** (attraper / déposer via bras + pince servos)
+- **Vision** (détection stable couleur ID + approche par seuil Y)
+- **Mission** (cycle automatique : détecter → attraper → livrer → déposer)
+- **Réglages** (vitesses, vision, reset mission)
 
 ---
 
 ## ✅ Installation (MakeCode)
 
 1. Ouvre MakeCode micro:bit
-2. **Extensions** → colle l’URL du dépôt :
+2. **Extensions** → colle l'URL du dépôt :
    - `https://github.com/Elmahni17974175/msmdadabit`
-3. Valide, puis tu verras les blocs **msmdadabit** dans la boîte à outils.
+3. Valide, puis tu verras les blocs **MSM Smart Tools** dans la boîte à outils.
 
 ---
 
 ## 🧩 Blocs disponibles (groupes)
 
-> Les blocs sont rangés par groupes dans MakeCode.
-
-### 1) Init
-- `initialiser AI Handler (DaDa:bit + WonderCam)`
-
-📸 Capture :
-- `docs/01-group-init.png`
+Les blocs sont rangés en 6 groupes dans MakeCode.
 
 ---
 
-### 2) Réglages
-- `régler vitesses suivi tout droit / correction / petit`
-- `régler ports servos bras / pince`
-- `régler angles bras haut / bas, pince ouverte / fermée`
-- `régler seuils caméra Xmin / Xmax / Yproche / validations`
+### 1) Mouvements
 
-📸 Capture :
-- `docs/02-group-reglages.png`
-
----
-
-### 3) Capteurs (ligne)
-- `mettre à jour capteurs de ligne (noir)`
-- `capteur S? sur noir ?`
-- `destination atteinte ? (S1,S2,S3,S4 sur noir)`
-
-📸 Capture :
-- `docs/03-group-capteurs.png`
+| Bloc | Description |
+|------|-------------|
+| `avancer à vitesse v` | Avance les 4 roues à la vitesse donnée |
+| `reculer à vitesse v` | Recule les 4 roues à la vitesse donnée |
+| `tourner à gauche vitesse v` | Pivote sur place vers la gauche |
+| `tourner à droite vitesse v` | Pivote sur place vers la droite |
+| `arrêter le robot` | Stoppe les 4 moteurs |
 
 ---
 
-### 4) Mouvements
-- `stopper le robot`
-- `avancer vitesse …`
-- `reculer vitesse …`
-- `tourner à gauche (arc) …`
-- `tourner à droite (arc) …`
-- `pivoter à gauche (sur place) …`
-- `pivoter à droite (sur place) …`
-- `faire demi-tour (recalage ligne) …` ✅ (robuste, testé)
+### 2) Suivi de ligne
 
-📸 Capture :
-- `docs/04-group-mouvements.png`
+| Bloc | Description |
+|------|-------------|
+| `suivre la ligne` | Lecture des 4 capteurs et correction automatique de trajectoire |
+| `arrivée détectée ?` | Retourne `vrai` si les 4 capteurs S1–S4 sont sur le noir (intersection) |
 
----
-
-### 5) Suivi de ligne
-- `suivre la ligne (mode compétition)` ✅
-
-📸 Capture :
-- `docs/05-group-suivi-ligne.png`
+**Logique de suivi :**
+- S2 + S3 sur noir → avancer à `vitesseToutDroit`
+- S1 sur noir → corriger vers la gauche à `vitesseCorrection`
+- S4 sur noir → corriger vers la droite à `vitesseCorrection`
+- Sinon → avancer à `petiteVitesse`
 
 ---
 
-### 6) Vision (WonderCam)
-- `mettre à jour WonderCam`
-- `couleur ID … détectée et centrée ?`
-- `Y de couleur ID …`
+### 3) Vision
 
-📸 Capture :
-- `docs/06-group-vision.png`
+| Bloc | Description |
+|------|-------------|
+| `cube détecté de façon stable ?` | Retourne `vrai` si le cube (ID configuré) est détecté pendant `SEUIL_VALIDATION` frames consécutives |
+| `approcher le cube` | Suit la ligne tout en se rapprochant jusqu'à ce que `Y ≥ Y_APPROCHE` (timeout 200 cycles) |
 
----
-
-### 7) Bras
-- `position de départ du bras`
-- `attraper l'objet`
-- `déposer l'objet`
-- `porte un objet ?`
-
-📸 Capture :
-- `docs/07-group-bras.png`
+**Valeurs par défaut :**
+- `ID_CUBE` = 1
+- `Y_APPROCHE` = 237
+- `SEUIL_VALIDATION` = 8 frames
 
 ---
 
-### 8) Macros (sans caméra)
-- `bip validation`
-- `si destination alors déposer puis demi-tour …`
-- `cycle suiveur de ligne sans caméra`
+### 4) Manipulation
 
-📸 Capture :
-- `docs/08-group-macros.png`
+| Bloc | Description |
+|------|-------------|
+| `attraper le cube` | Arrête le robot → bras en bas → ferme la pince → bras en haut → `modeMission = 1` |
+| `déposer le cube` | Bras en bas → ouvre la pince → bras en haut → `modeMission = 0` |
+
+**Positions par défaut (servos 270°) :**
+
+| Variable | Valeur | Description |
+|----------|--------|-------------|
+| `BRAS_HAUT` | -60 | Angle servo 5 — bras levé |
+| `BRAS_BAS` | -5 | Angle servo 5 — bras abaissé |
+| `PINCE_OUVERTE` | 15 | Angle servo 6 — pince ouverte |
+| `PINCE_FERMEE` | -25 | Angle servo 6 — pince fermée |
+| `TEMPS_MOUVEMENT` | 500 ms | Durée de déplacement servo |
+| `TEMPS_ATTENTE` | 800 ms | Pause après chaque action |
 
 ---
 
-### 9) Mission
-- `phase mission (0=reconnaissance,1=livraison)`
-- `définir phase mission à …`
-- `si couleur ID … détectée (stable) alors approcher & attraper` ✅
+### 5) Mission
 
-📸 Capture :
-- `docs/09-group-mission.png`
+| Bloc | Description |
+|------|-------------|
+| `ne porte pas de cube ?` | Retourne `vrai` si `modeMission == 0` |
+| `bip` | Joue un bip sonore (Do, noire) |
+| `gérer la destination` | Arrête → dépose si `modeMission == 1` → tourne à droite jusqu'à détecter S3+S4 sur noir |
+| `cycle mission` | Enchaîne détection, approche, saisie, suivi de ligne et gestion de destination |
+
+**Logique du `cycle mission` :**
+1. Si `modeMission == 0` et cube détecté de façon stable → bip → approcher → attraper
+2. Si `arrivée détectée` → gérer la destination
+3. Sinon → suivre la ligne
+
+---
+
+### 6) Réglages
+
+| Bloc | Description |
+|------|-------------|
+| `régler vitesses v1 v2 v3` | Définit `vitesseToutDroit`, `vitesseCorrection`, `petiteVitesse` |
+| `régler vision ID id` | Change l'ID couleur cible et remet le compteur stable à 0 |
+| `initialiser la mission` | Dépose le cube si porté et remet `modeMission = 0` |
+
+**Valeurs par défaut des vitesses :**
+
+| Variable | Valeur |
+|----------|--------|
+| `vitesseToutDroit` | 55 |
+| `vitesseCorrection` | 44 |
+| `petiteVitesse` | 33 |
 
 ---
 
@@ -119,42 +124,69 @@ Extension MakeCode (micro:bit) pour le robot **DaDa:bit** (Hiwonder) avec la **W
 
 ### 🎯 Objectif
 Le robot :
-1. Suit la ligne
-2. Détecte **Couleur ID1**
-3. Approche l’objet (centrage X + seuil Y)
-4. Attrape
-5. Suit la ligne jusqu’à la destination (S1..S4 sur noir)
-6. Dépose
+1. Suit la ligne en permanence
+2. Détecte le cube (Couleur ID1) de façon stable
+3. Approche l'objet (seuil Y caméra)
+4. Attrape le cube
+5. Continue de suivre la ligne jusqu'à l'intersection (S1+S2+S3+S4 sur noir)
+6. Dépose le cube et se recale sur la ligne
 7. Recommence
 
-📸 Capture du programme (recommandée) :
-- `docs/10-example-ai-handler-complet.png`
-
 ### ✅ Code (TypeScript) équivalent
+
 ```typescript
-msmdadabit.init()
+// Réglages initiaux (optionnel)
+msmSmartTools.reglerVitesses(55, 44, 33)
+msmSmartTools.reglerVision(1)
 
 basic.forever(function () {
-    // Toujours : mise à jour capteurs
-    msmdadabit.updateCamera()
-    msmdadabit.updateLineSensors()
+    msmSmartTools.cycleMission()
+    basic.pause(10)
+})
+```
 
-    // Phase 0 : rechercher + attraper ID1
-    if (msmdadabit.getPhase() == 0) {
-        msmdadabit.approachAndGrabIfColor(1)
-        // si pas attrapé, on continue de suivre la ligne
-        msmdadabit.lineFollowGeneral()
+### ✅ Utilisation des blocs individuels (contrôle manuel)
+
+```typescript
+// Initialisation
+msmSmartTools.resetMission()
+
+basic.forever(function () {
+
+    // Phase 0 : chercher et attraper
+    if (msmSmartTools.nePortePasCube()) {
+        if (msmSmartTools.cubeDetecteStable()) {
+            msmSmartTools.jouerBip()
+            msmSmartTools.approcherCube()
+            msmSmartTools.attraperCube()
+        } else {
+            msmSmartTools.suiviDeLigne()
+        }
     }
 
-    // Phase 1 : livrer + déposer à destination
-    if (msmdadabit.getPhase() == 1) {
-        if (msmdadabit.atDestination()) {
-            msmdadabit.drop()
-            basic.pause(200)
+    // Phase 1 : livrer
+    if (!msmSmartTools.nePortePasCube()) {
+        if (msmSmartTools.arriveeDetectee()) {
+            msmSmartTools.destination()
         } else {
-            msmdadabit.lineFollowGeneral()
+            msmSmartTools.suiviDeLigne()
         }
     }
 
     basic.pause(10)
 })
+```
+
+---
+
+## ⚙️ Dépendances
+
+```json
+{
+  "core": "*",
+  "microbit": "*",
+  "dadabit": "github:hiwonder/DaDabit"
+}
+```
+
+La bibliothèque **WonderCam** (`wondercam`) est utilisée en interne pour la détection couleur — elle doit être disponible dans l'environnement MakeCode via le package `dadabit`.
