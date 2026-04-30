@@ -242,7 +242,7 @@ namespace msmSmartTools {
         }
     }
 
-    //% block="régler vitesses v1 (rapide) %v1 v2 (correction) %v2 v3 (lent) %v3"
+    //% block="régler v1 %v1 v2 %v2 v3 %v3"
     //% v1.defl=55
     //% v2.defl=44
     //% v3.defl=33
