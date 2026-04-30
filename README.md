@@ -14,7 +14,7 @@ Extension MakeCode (micro:bit) pour le robot **DaDa:bit** (Hiwonder) avec la **W
 
 1. Ouvre MakeCode micro:bit
 2. **Extensions** → colle l'URL du dépôt :
-   - `https://github.com/Elmahni17974175/msmdadabit`
+   - `https://github.com/msmmediasdadarobot/dadasimple`
 3. Valide, puis tu verras les blocs **MSM Smart Tools** dans la boîte à outils.
 
 ---
