@@ -3,8 +3,9 @@
 namespace msmSmartTools {
 
     // =========================
-    // VARIABLES INTERNES (NON MODIFIÉES PAR L'ÉLÈVE)
+    // VARIABLES INTERNES
     // =========================
+
     // Capteurs de ligne (détectent le noir)
     let capteur1 = false
     let capteur2 = false
@@ -34,17 +35,13 @@ namespace msmSmartTools {
     let TEMPS_MOUVEMENT = 500
     let TEMPS_ATTENTE = 800
 
-    // Sens des moteurs (calibrage)
+    // Sens moteurs (calibrage)
     let sensGauche = dadabit.Oriention.Counterclockwise
     let sensDroite = dadabit.Oriention.Clockwise
 
     // =========================
     // CAPTEURS DE LIGNE
     // =========================
-    /**
-     * Met à jour les capteurs de ligne
-     * (permet de savoir où est la ligne noire)
-     */
     function mettreAJourCapteursLigne(): void {
         capteur1 = dadabit.line_followers(dadabit.LineFollowerSensors.S1, dadabit.LineColor.Black)
         capteur2 = dadabit.line_followers(dadabit.LineFollowerSensors.S2, dadabit.LineColor.Black)
@@ -53,7 +50,7 @@ namespace msmSmartTools {
     }
 
     // =========================
-    // MOUVEMENTS DU ROBOT
+    // MOUVEMENTS
     // =========================
 
     //% block="avancer à vitesse %v"
@@ -104,8 +101,9 @@ namespace msmSmartTools {
     // =========================
     // SUIVI DE LIGNE
     // =========================
+
     /**
-     * Le robot suit automatiquement une ligne noire
+     * Le robot suit la ligne noire automatiquement
      */
     //% block="suivre la ligne"
     //% group="Suivi de ligne"
@@ -113,15 +111,15 @@ namespace msmSmartTools {
 
         mettreAJourCapteursLigne()
 
-        // Robot centré → avance vite
+        // Bien centré → avancer
         if (capteur2 && capteur3) {
             avancer(vitesseToutDroit)
 
-        // Déviation à gauche → corriger
+        // Déviation gauche → corriger
         } else if (capteur1) {
             tournerAGauche(vitesseCorrection)
 
-        // Déviation à droite → corriger
+        // Déviation droite → corriger
         } else if (capteur4) {
             tournerADroite(vitesseCorrection)
 
@@ -139,12 +137,9 @@ namespace msmSmartTools {
     }
 
     // =========================
-    // VISION (CAMÉRA)
+    // VISION
     // =========================
 
-    /**
-     * Vérifie si le cube est détecté de manière stable
-     */
     function detectionStable(): boolean {
         if (wondercam.isDetectedColorId(ID_CUBE)) compteurStable++
         else compteurStable = 0
@@ -184,7 +179,7 @@ namespace msmSmartTools {
     }
 
     // =========================
-    // MANIPULATION (BRAS)
+    // MANIPULATION
     // =========================
 
     function brasEnHaut() { dadabit.setLego270Servo(5, BRAS_HAUT, TEMPS_MOUVEMENT) }
@@ -216,7 +211,7 @@ namespace msmSmartTools {
     }
 
     // =========================
-    // MISSION (INTELLIGENCE)
+    // MISSION
     // =========================
 
     //% block="ne porte pas de cube ?"
@@ -238,7 +233,6 @@ namespace msmSmartTools {
         arreterRobot()
         basic.pause(500)
 
-        // Si le robot transporte un cube → déposer
         if (modeMission == 1) {
             deposerCube()
         }
@@ -278,7 +272,7 @@ namespace msmSmartTools {
     // RÉGLAGES
     // =========================
 
-    //% block="régler vitesses %v1 %v2 %v3"
+    //% block="régler vitesses v1 (rapide) v2 (correction) v3 (lent)"
     //% group="Réglages"
     export function reglerVitesses(v1: number, v2: number, v3: number): void {
         vitesseToutDroit = v1
