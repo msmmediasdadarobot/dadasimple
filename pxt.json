@@ -1,12 +1,12 @@
 {
   "name": "msmdadabit",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "description": "MSM AI Handler (DaDa:bit + WonderCam) - blocs utilitaires pour suivi de ligne + saisie + depot",
   "license": "MIT",
   "dependencies": {
     "core": "*",
     "microbit": "*",
-    "dadabit": "github:msmmediasdadarobot/dadarobot"
+    "dadabit": "github:msmmediasdadarobot/dadarobot#v0.0.1"
   },
   "files": [
     "main.ts"
