@@ -103,6 +103,48 @@ namespace msmSmartTools {
         compteurStable = 0
     }
 
+    //% block="régler zone détection X_min %xMin X_max %xMax"
+    //% xMin.defl=80
+    //% xMax.defl=240
+    //% group="Réglages"
+    export function reglerZoneDetection(xMin: number, xMax: number): void {
+        X_MIN = xMin
+        X_MAX = xMax
+    }
+
+    //% block="régler distance approche Y %yApproche"
+    //% yApproche.defl=237
+    //% group="Réglages"
+    export function reglerApproche(yApproche: number): void {
+        Y_APPROCHE = yApproche
+    }
+
+    //% block="régler bras haut %brasHaut bas %brasBas"
+    //% brasHaut.defl=-60
+    //% brasBas.defl=-5
+    //% group="Réglages"
+    export function reglerBras(brasHaut: number, brasBas: number): void {
+        BRAS_HAUT = brasHaut
+        BRAS_BAS = brasBas
+    }
+
+    //% block="régler pince ouverte %pinceOuverte fermée %pinceFermee"
+    //% pinceOuverte.defl=15
+    //% pinceFermee.defl=-25
+    //% group="Réglages"
+    export function reglerPince(pinceOuverte: number, pinceFermee: number): void {
+        PINCE_OUVERTE = pinceOuverte
+        PINCE_FERMEE = pinceFermee
+    }
+
+    //% block="régler seuil de validation %seuil"
+    //% seuil.defl=8
+    //% group="Réglages"
+    export function reglerSeuil(seuil: number): void {
+        SEUIL_VALIDATION = seuil
+        compteurStable = 0
+    }
+
     // CORRECTION : pauses entre bras et pince pour éviter conflits servo
     //% block="initialiser la mission"
     //% group="Réglages"
