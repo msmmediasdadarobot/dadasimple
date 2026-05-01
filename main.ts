@@ -35,6 +35,8 @@ namespace msmSmartTools {
     let sensGauche = dadabit.Oriention.Counterclockwise
     let sensDroite = dadabit.Oriention.Clockwise
 
+    let RETOUR_DROITE = true   // true = pivot à droite après dépôt, false = gauche
+
     // ─────────────────────────────────────────
     // FONCTIONS INTERNES (privées)
     // ─────────────────────────────────────────
@@ -116,6 +118,8 @@ namespace msmSmartTools {
     //% yApproche.defl=237
     //% group="Réglages"
     export function reglerApproche(yApproche: number): void {
+        if (yApproche > 239) yApproche = 239   // ← garde maximale (résolution caméra)
+        if (yApproche < 0)   yApproche = 0     // ← garde minimale
         Y_APPROCHE = yApproche
     }
 
@@ -143,6 +147,13 @@ namespace msmSmartTools {
     export function reglerSeuil(seuil: number): void {
         SEUIL_VALIDATION = seuil
         compteurStable = 0
+    }
+
+    //% block="régler sens retour après dépôt %sens"
+    //% sens.shadow="toggleRightLeft"
+    //% group="Réglages"
+    export function reglerSensRetour(sens: boolean): void {
+        RETOUR_DROITE = sens
     }
 
     // CORRECTION : pauses entre bras et pince pour éviter conflits servo
@@ -344,19 +355,32 @@ namespace msmSmartTools {
             deposerCube()
         }
 
-        // Recul léger avant de pivoter
-        reculer(petiteVitesse)
-        basic.pause(400)
+        // ✅ Recul guidé : on recule jusqu'à perdre complètement la ligne
+        mettreAJourCapteursLigne()
+        let timeoutRecul = 0
+        while ((capteur1 || capteur2 || capteur3 || capteur4) && timeoutRecul < 100) {
+            reculer(petiteVitesse)
+            mettreAJourCapteursLigne()
+            timeoutRecul += 1
+            basic.pause(20)
+        }
+        basic.pause(300)   // extra pour s'éloigner franchement de la ligne
         arreterRobot()
         basic.pause(200)
 
-        // Pivot à droite jusqu'à retrouver la ligne (capteurs 3+4 uniquement)
+        // ✅ Pivot configurable (droite ou gauche) avec condition souple + timeout généreux
         let timeout = 0
-        while (timeout < 150) {
+        while (timeout < 400) {
             mettreAJourCapteursLigne()
-            tournerADroite(vitesseCorrection)
 
-            if (capteur3 && capteur4 && !(capteur1 || capteur2)) {
+            if (RETOUR_DROITE) {
+                tournerADroite(vitesseCorrection)
+            } else {
+                tournerAGauche(vitesseCorrection)
+            }
+
+            // Condition souple : dès qu'un capteur central détecte la ligne
+            if (capteur2 || capteur3) {
                 break
             }
 
