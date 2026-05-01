@@ -1,6 +1,6 @@
 {
   "name": "dadasimple",
-  "version": "0.0.39",
+  "version": "0.0.40",
   "description": "MSM AI Handler (DaDa:bit + WonderCam) - blocs utilitaires pour suivi de ligne + saisie + depot",
   "license": "MIT",
   "dependencies": {
