@@ -374,15 +374,19 @@ namespace msmSmartTools {
         reculer(vitesseCorrection)
         basic.pause(PAUSE_RECUL)
 
-        // ── 4. DEMI-TOUR jusqu'à S3&&S4&&!S1&&!S2 ────────────────
+        // ── 4. DEMI-TOUR ─────────────────────────────────────────
+        // Sens droite : S4 arrive en premier → condition souple S3||S4
+        // Sens gauche : condition originale stricte S3&&S4&&!S1&&!S2
         mettreAJourCapteursLigne()
         while (capteur1 || capteur2 || !(capteur3 && capteur4)) {
             if (RETOUR_DROITE) {
                 tournerADroite(vitesseCorrection)
+                mettreAJourCapteursLigne()
+                if (capteur3 || capteur4) { break }
             } else {
                 tournerAGauche(vitesseCorrection)
+                mettreAJourCapteursLigne()
             }
-            mettreAJourCapteursLigne()
         }
 
         arreterRobot()
