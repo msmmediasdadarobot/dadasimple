@@ -30,14 +30,11 @@ namespace msmSmartTools {
     let PINCE_FERMEE = -25
 
     let TEMPS_MOUVEMENT = 500
-    let TEMPS_ATTENTE = 800   // pause entre chaque mouvement de bras/pince
+    let TEMPS_ATTENTE = 800
 
-    // Paramètres temporisation destination()
-    let PAUSE_STOP = 500      // pause après arrêt à destination
-    let PAUSE_RECUL = 500     // durée du recul avant demi-tour
-
-    // Sens du demi-tour : false = gauche/Counterclockwise (comportement original)
-    let RETOUR_DROITE = false
+    let PAUSE_STOP = 500        // pause après arrêt à destination
+    let PAUSE_RECUL = 600       // ← valeur calibrée qui fonctionne bien
+    let RETOUR_DROITE = true    // ← droite = sens qui fonctionne bien
 
     let sensGauche = dadabit.Oriention.Counterclockwise
     let sensDroite = dadabit.Oriention.Clockwise
@@ -158,7 +155,7 @@ namespace msmSmartTools {
     }
 
     //% block="régler pause recul %ms ms"
-    //% ms.defl=500
+    //% ms.defl=600
     //% group="Réglages"
     export function reglerPauseRecul(ms: number): void {
         PAUSE_RECUL = ms
@@ -173,10 +170,10 @@ namespace msmSmartTools {
 
     //% block="régler sens demi-tour droite %droite"
     //% droite.shadow="toggleYesNo"
-    //% droite.defl=false
+    //% droite.defl=true
     //% group="Réglages"
-    // false = gauche = Counterclockwise (comportement original)
-    // true  = droite = Clockwise
+    // true  = droite (valeur calibrée qui fonctionne bien)
+    // false = gauche
     export function reglerSensRetour(droite: boolean): void {
         RETOUR_DROITE = droite
     }
@@ -360,14 +357,6 @@ namespace msmSmartTools {
         )
     }
 
-    // ─────────────────────────────────────────
-    // destination() : fidèle au code original
-    //
-    // Seuls ajouts par rapport à l'original :
-    //   - PAUSE_STOP  (défaut 500ms) remplace basic.pause(500) fixe
-    //   - PAUSE_RECUL (défaut 500ms) remplace basic.pause(500) fixe
-    //   - RETOUR_DROITE (défaut false) pour changer le sens si besoin
-    // ─────────────────────────────────────────
     //% block="gérer la destination"
     //% group="Mission"
     export function destination(): void {
@@ -382,13 +371,10 @@ namespace msmSmartTools {
         }
 
         // ── 3. RECUL vitesse 44 pendant PAUSE_RECUL ms ───────────
-        // Dans l'original : Clockwise sur tous = recul selon câblage
         reculer(vitesseCorrection)
         basic.pause(PAUSE_RECUL)
 
         // ── 4. DEMI-TOUR jusqu'à S3&&S4&&!S1&&!S2 ────────────────
-        // Original : Counterclockwise sur tous = gauche
-        // RETOUR_DROITE permet d'inverser si besoin (défaut = false = gauche)
         mettreAJourCapteursLigne()
         while (capteur1 || capteur2 || !(capteur3 && capteur4)) {
             if (RETOUR_DROITE) {
