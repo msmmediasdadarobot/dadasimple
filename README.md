@@ -1,192 +1,268 @@
-# msmdadabit — MSM Smart Tools (DaDa:bit + WonderCam)
+# 🤖 AI Handler — DaDa:bit + WonderCam
 
-Extension MakeCode (micro:bit) pour le robot **DaDa:bit** (Hiwonder) avec la **WonderCam**, dédiée au projet **MSM Smart Tools** :
-- **Suivi de ligne** (4 capteurs S1–S4) — robuste et testé
-- **Mouvements** (avancer / reculer / tourner gauche / tourner droite / arrêter)
-- **Manipulation** (attraper / déposer via bras + pince servos)
-- **Vision** (détection stable couleur ID + approche par seuil Y)
-- **Mission** (cycle automatique : détecter → attraper → livrer → déposer) 
-- **Réglages** (vitesses, vision, reset mission)
+> Robot autonome de tri et de transport de cubes colorés par vision artificielle et suivi de ligne.  
+> Plateforme : **DaDa:bit** · Caméra IA : **WonderCam** · Langage : **MakeCode TypeScript**
 
 ---
 
-## ✅ Installation (MakeCode)
+## 📋 Table des matières
 
-1. Ouvre MakeCode micro:bit
-2. **Extensions** → colle l'URL du dépôt :
-   - `https://github.com/msmmediasdadarobot/dadasimple`
-3. Valide, puis tu verras les blocs **MSM Smart Tools** dans la boîte à outils.
-
----
-
-## 🧩 Blocs disponibles (groupes)
-
-Les blocs sont rangés en 6 groupes dans MakeCode.
-
----
-
-### 1) Mouvements
-
-| Bloc | Description |
-|------|-------------|
-| `avancer à vitesse v` | Avance les 4 roues à la vitesse donnée |
-| `reculer à vitesse v` | Recule les 4 roues à la vitesse donnée |
-| `tourner à gauche vitesse v` | Pivote sur place vers la gauche |
-| `tourner à droite vitesse v` | Pivote sur place vers la droite |
-| `arrêter le robot` | Stoppe les 4 moteurs |
+- [Description du projet](#-description-du-projet)
+- [Matériel requis](#-matériel-requis)
+- [Architecture du code](#-architecture-du-code)
+- [Algorithme principal](#-algorithme-principal)
+- [Variables de configuration](#-variables-de-configuration)
+- [API — Blocs disponibles](#-api--blocs-disponibles)
+- [Utilisation (main.ts)](#-utilisation-maints)
+- [Calibration](#-calibration)
+- [Dépannage](#-dépannage)
+- [Licence](#-licence)
 
 ---
 
-### 2) Suivi de ligne
+## 📌 Description du projet
 
-| Bloc | Description |
-|------|-------------|
-| `suivre la ligne` | Lecture des 4 capteurs et correction automatique de trajectoire |
-| `arrivée détectée ?` | Retourne `vrai` si les 4 capteurs S1–S4 sont sur le noir (intersection) |
+Pendant le suivi de ligne, si la **WonderCam** reconnaît la couleur **ID1**, le robot :
 
-**Logique de suivi :**
-- S2 + S3 sur noir → avancer à `vitesseToutDroit`
-- S1 sur noir → corriger vers la gauche à `vitesseCorrection`
-- S4 sur noir → corriger vers la droite à `vitesseCorrection`
-- Sinon → avancer à `petiteVitesse`
+1. S'approche du cube en continuant le suivi de ligne
+2. Saisit le cube avec son bras et sa pince
+3. Transporte le cube jusqu'à la destination (croix détectée par les 4 capteurs de ligne)
+4. Dépose le cube, recule, effectue un demi-tour et reprend le suivi de ligne
+
+> ⚠️ **Remarque** : Assurez-vous que la WonderCam est dans un environnement bien éclairé et qu'aucune couleur similaire à l'ID cible n'est présente en arrière-plan.
 
 ---
 
-### 3) Vision
+## 🔧 Matériel requis
 
-| Bloc | Description |
-|------|-------------|
-| `cube détecté de façon stable ?` | Retourne `vrai` si le cube (ID configuré) est détecté pendant `SEUIL_VALIDATION` frames consécutives |
-| `approcher le cube` | Suit la ligne tout en se rapprochant jusqu'à ce que `Y ≥ Y_APPROCHE` (timeout 200 cycles) |
-
-**Valeurs par défaut :**
-- `ID_CUBE` = 1
-- `Y_APPROCHE` = 237
-- `SEUIL_VALIDATION` = 8 frames
-
----
-
-### 4) Manipulation
-
-| Bloc | Description |
-|------|-------------|
-| `attraper le cube` | Arrête le robot → bras en bas → ferme la pince → bras en haut → `modeMission = 1` |
-| `déposer le cube` | Bras en bas → ouvre la pince → bras en haut → `modeMission = 0` |
-
-**Positions par défaut (servos 270°) :**
-
-| Variable | Valeur | Description |
-|----------|--------|-------------|
-| `BRAS_HAUT` | -60 | Angle servo 5 — bras levé |
-| `BRAS_BAS` | -5 | Angle servo 5 — bras abaissé |
-| `PINCE_OUVERTE` | 15 | Angle servo 6 — pince ouverte |
-| `PINCE_FERMEE` | -25 | Angle servo 6 — pince fermée |
-| `TEMPS_MOUVEMENT` | 500 ms | Durée de déplacement servo |
-| `TEMPS_ATTENTE` | 800 ms | Pause après chaque action |
+| Composant | Rôle |
+|---|---|
+| DaDa:bit | Contrôleur principal (micro:bit) |
+| WonderCam | Module de vision IA (I2C) |
+| Servo 360° × 4 (ports 1–4) | Roues de déplacement |
+| Servo 270° (port 5) | Bras robotique |
+| Servo 270° (port 6) | Pince |
+| Capteur de ligne × 4 (S1–S4) | Suivi de ligne & détection destination |
 
 ---
 
-### 5) Mission
+## 🗂️ Architecture du code
 
-| Bloc | Description |
-|------|-------------|
-| `ne porte pas de cube ?` | Retourne `vrai` si `modeMission == 0` |
-| `bip` | Joue un bip sonore (Do, noire) |
-| `gérer la destination` | Arrête → dépose si `modeMission == 1` → tourne à droite jusqu'à détecter S3+S4 sur noir |
-| `cycle mission` | Enchaîne détection, approche, saisie, suivi de ligne et gestion de destination |
-
-**Logique du `cycle mission` :**
-1. Si `modeMission == 0` et cube détecté de façon stable → bip → approcher → attraper
-2. Si `arrivée détectée` → gérer la destination
-3. Sinon → suivre la ligne
-
----
-
-### 6) Réglages
-
-| Bloc | Description |
-|------|-------------|
-| `régler vitesses v1 v2 v3` | Définit `vitesseToutDroit`, `vitesseCorrection`, `petiteVitesse` |
-| `régler vision ID id` | Change l'ID couleur cible et remet le compteur stable à 0 |
-| `initialiser la mission` | Dépose le cube si porté et remet `modeMission = 0` |
-
-**Valeurs par défaut des vitesses :**
-
-| Variable | Valeur |
-|----------|--------|
-| `vitesseToutDroit` | 55 |
-| `vitesseCorrection` | 44 |
-| `petiteVitesse` | 33 |
-
----
-
-## 🧠 Exemple complet : AI Handler (Caméra + Ligne + Dépôt)
-
-### 🎯 Objectif
-Le robot :
-1. Suit la ligne en permanence
-2. Détecte le cube (Couleur ID1) de façon stable
-3. Approche l'objet (seuil Y caméra)
-4. Attrape le cube
-5. Continue de suivre la ligne jusqu'à l'intersection (S1+S2+S3+S4 sur noir)
-6. Dépose le cube et se recale sur la ligne
-7. Recommence
-
-### ✅ Code (TypeScript) équivalent
-
-```typescript
-// Réglages initiaux (optionnel)
-msmSmartTools.reglerVitesses(55, 44, 33)
-msmSmartTools.reglerVision(1)
-
-basic.forever(function () {
-    msmSmartTools.cycleMission()
-    basic.pause(10)
-})
+```
+📦 ai-handler-dadabit/
+├── main.ts                  ← Programme principal (boucle infinie)
+├── msmSmartTools.ts         ← Extension MSM Smart Tools (namespace)
+└── README.md
 ```
 
-### ✅ Utilisation des blocs individuels (contrôle manuel)
+Le namespace `msmSmartTools` est organisé en **6 groupes de blocs** :
+
+| Groupe | Rôle |
+|---|---|
+| `Réglages` | Paramétrage des vitesses, vision, bras, pince, seuils |
+| `Mouvements` | Avancer, reculer, tourner, arrêter |
+| `Suivi de ligne` | Logique de suivi et détection d'arrivée |
+| `Vision` | Détection stable de cube, approche |
+| `Manipulation` | Attraper et déposer le cube |
+| `Mission` | Cycle complet, gestion destination, bip |
+
+---
+
+## 🧠 Algorithme principal
+
+```
+┌─ INITIALISATION ──────────────────────────────┐
+│  • Bras en position haute                      │
+│  • Pince ouverte                               │
+│  • modeMission ← 0  (mode recherche)           │
+│  • compteurStable ← 0                          │
+└───────────────────────────────────────────────┘
+            ↓
+┌─ BOUCLE INFINIE ──────────────────────────────┐
+│                                               │
+│  wondercam.UpdateResult()                     │
+│                                               │
+│  ┌─ PHASE RECHERCHE (modeMission = 0) ──────┐ │
+│  │  SI cube ID1 détecté stablement (>8x)    │ │
+│  │    → Bip                                 │ │
+│  │    → Approcher le cube (suivi de ligne)  │ │
+│  │    → Attraper le cube                    │ │
+│  │    → modeMission ← 1                     │ │
+│  └──────────────────────────────────────────┘ │
+│                                               │
+│  ┌─ PHASE TRANSPORT / DÉPÔT ───────────────┐  │
+│  │  SI S1 & S2 & S3 & S4 (croix)           │  │
+│  │    → Arrêter                             │  │
+│  │    → SI modeMission=1 : Déposer cube     │  │
+│  │    → Reculer → Demi-tour → Reprendre     │  │
+│  └──────────────────────────────────────────┘  │
+│                                               │
+│  ┌─ SUIVI DE LIGNE (cas par défaut) ───────┐  │
+│  │  S2 & S3        → avancer               │  │
+│  │  S1 & S2        → tourner gauche        │  │
+│  │  S3 & S4        → tourner droite        │  │
+│  │  autres cas     → corrections fines     │  │
+│  └──────────────────────────────────────────┘  │
+└───────────────────────────────────────────────┘
+```
+
+---
+
+## ⚙️ Variables de configuration
+
+Toutes les variables sont accessibles via les blocs du groupe **Réglages** :
+
+| Variable | Valeur défaut | Description |
+|---|---|---|
+| `vitesseToutDroit` | `55` | Vitesse en ligne droite |
+| `vitesseCorrection` | `44` | Vitesse lors des corrections de trajectoire |
+| `petiteVitesse` | `33` | Vitesse pour corrections fines |
+| `ID_CUBE` | `1` | ID couleur cible WonderCam |
+| `X_MIN` / `X_MAX` | `80` / `240` | Zone de centrage horizontal (px) |
+| `Y_APPROCHE` | `237` | Seuil vertical d'approche du cube (px) |
+| `SEUIL_VALIDATION` | `8` | Nombre de frames stables avant action |
+| `BRAS_HAUT` / `BRAS_BAS` | `-60` / `-5` | Angles servo bras (°) |
+| `PINCE_OUVERTE` / `PINCE_FERMEE` | `15` / `-25` | Angles servo pince (°) |
+| `PAUSE_STOP` | `500` ms | Pause après arrêt à destination |
+| `PAUSE_RECUL` | `600` ms | Durée du recul après dépôt |
+| `TEMPS_ATTENTE` | `800` ms | Pause entre chaque mouvement bras/pince |
+| `RETOUR_DROITE` | `true` | Sens du demi-tour (`true` = droite) |
+
+---
+
+## 📦 API — Blocs disponibles
+
+### 🔵 Réglages
 
 ```typescript
-// Initialisation
+msmSmartTools.resetMission()
+msmSmartTools.reglerVitesses(55, 44, 33)
+msmSmartTools.reglerVision(1)
+msmSmartTools.reglerZoneDetection(80, 240)
+msmSmartTools.reglerApproche(237)
+msmSmartTools.reglerBras(-60, -5)
+msmSmartTools.reglerPince(15, -25)
+msmSmartTools.reglerSeuil(8)
+msmSmartTools.reglerPauseStop(500)
+msmSmartTools.reglerPauseRecul(600)
+msmSmartTools.reglerPauseAttente(800)
+msmSmartTools.reglerSensRetour(true)
+```
+
+### 🚗 Mouvements
+
+```typescript
+msmSmartTools.avancer(50)
+msmSmartTools.reculer(50)
+msmSmartTools.tournerAGauche(40)
+msmSmartTools.tournerADroite(40)
+msmSmartTools.arreterRobot()
+```
+
+### 📡 Suivi de ligne
+
+```typescript
+msmSmartTools.suiviDeLigne()       // applique la logique S1–S4
+msmSmartTools.arriveeDetectee()    // true si S1&&S2&&S3&&S4
+```
+
+### 👁️ Vision
+
+```typescript
+msmSmartTools.cubeDetecteStable()  // true après SEUIL_VALIDATION frames
+msmSmartTools.approcherCube()      // avance vers le cube jusqu'à Y_APPROCHE
+```
+
+### 🦾 Manipulation
+
+```typescript
+msmSmartTools.attraperCube()       // descend bras → ferme pince → remonte
+msmSmartTools.deposerCube()        // descend bras → ouvre pince → remonte
+```
+
+### 🎯 Mission
+
+```typescript
+msmSmartTools.nePortePasCube()     // true si modeMission == 0
+msmSmartTools.jouerBip()           // bip sonore (Do, 1 beat)
+msmSmartTools.destination()        // stop → dépôt → recul → demi-tour
+msmSmartTools.cycleMission()       // cycle complet en 1 appel (à mettre en boucle)
+```
+
+---
+
+## 🚀 Utilisation (main.ts)
+
+### Option A — Utilisation du cycle tout-en-un (recommandé)
+
+```typescript
 msmSmartTools.resetMission()
 
 basic.forever(function () {
+    msmSmartTools.cycleMission()
+})
+```
 
-    // Phase 0 : chercher et attraper
-    if (msmSmartTools.nePortePasCube()) {
-        if (msmSmartTools.cubeDetecteStable()) {
-            msmSmartTools.jouerBip()
-            msmSmartTools.approcherCube()
-            msmSmartTools.attraperCube()
-        } else {
-            msmSmartTools.suiviDeLigne()
-        }
+### Option B — Contrôle manuel étape par étape
+
+```typescript
+msmSmartTools.resetMission()
+
+basic.forever(function () {
+    wondercam.UpdateResult()
+
+    if (msmSmartTools.nePortePasCube() && msmSmartTools.cubeDetecteStable()) {
+        msmSmartTools.arreterRobot()
+        msmSmartTools.jouerBip()
+        msmSmartTools.approcherCube()
+        msmSmartTools.attraperCube()
     }
 
-    // Phase 1 : livrer
-    if (!msmSmartTools.nePortePasCube()) {
-        if (msmSmartTools.arriveeDetectee()) {
-            msmSmartTools.destination()
-        } else {
-            msmSmartTools.suiviDeLigne()
-        }
+    if (msmSmartTools.arriveeDetectee()) {
+        msmSmartTools.destination()
+    } else {
+        msmSmartTools.suiviDeLigne()
     }
-
-    basic.pause(10)
 })
 ```
 
 ---
 
-## ⚙️ Dépendances
+## 🎛️ Calibration
 
-```json
-{
-  "core": "*",
-  "microbit": "*",
-  "dadabit": "github:hiwonder/DaDabit"
-}
-```
+### 1. Calibrer la WonderCam
+Entraîner la couleur cible sous **Color Recognition** dans l'interface WonderCam et noter l'ID (défaut : `1`).
 
-La bibliothèque **WonderCam** (`wondercam`) est utilisée en interne pour la détection couleur — elle doit être disponible dans l'environnement MakeCode via le package `dadabit`.
+### 2. Ajuster la zone de détection X
+Observer la valeur X retournée par `wondercam.XOfColorId(Pos_X, ID)` au centre de l'image.  
+Ajuster `X_MIN` et `X_MAX` pour centrer la détection (défaut : `80`–`240` sur 320 px).
+
+### 3. Ajuster Y_APPROCHE
+Valeur Y à partir de laquelle le robot est assez proche pour saisir.  
+Tester en incrémentant depuis `220` jusqu'à `237` selon la hauteur réelle de la pince.
+
+### 4. Calibrer les servos bras et pince
+Tester `BRAS_HAUT`, `BRAS_BAS`, `PINCE_OUVERTE`, `PINCE_FERMEE` manuellement via les blocs de réglage.
+
+### 5. Calibrer le demi-tour
+Si le robot ne retrouve pas la ligne après dépôt : inverser `RETOUR_DROITE` ou ajuster `PAUSE_RECUL`.
+
+---
+
+## 🔍 Dépannage
+
+| Symptôme | Cause probable | Solution |
+|---|---|---|
+| Robot ne détecte pas le cube | Mauvais éclairage ou ID incorrect | Vérifier l'entraînement WonderCam, régler `ID_CUBE` |
+| Robot s'arrête sans saisir | `Y_APPROCHE` trop faible | Augmenter `Y_APPROCHE` (max 239) |
+| Pince n'attrape pas | Angles mal calibrés | Ajuster `BRAS_BAS` et `PINCE_FERMEE` |
+| Robot ne retrouve pas la ligne | Sens demi-tour incorrect | Inverser `RETOUR_DROITE` ou augmenter `PAUSE_RECUL` |
+| Faux positifs de détection | `SEUIL_VALIDATION` trop bas | Augmenter `SEUIL_VALIDATION` (ex : 12) |
+| Suivi de ligne instable | Vitesses trop élevées | Réduire `vitesseToutDroit` et `vitesseCorrection` |
+
+---
+
+## 📄 Licence
+
+Ce projet est distribué sous licence **MIT**.  
+Réalisé dans le cadre du projet pédagogique **MSM Smart Tools** — DaDa:bit AI Handler.
