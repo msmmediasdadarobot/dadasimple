@@ -30,14 +30,17 @@ namespace msmSmartTools {
     let PINCE_FERMEE = -25
 
     let TEMPS_MOUVEMENT = 500
-    let TEMPS_ATTENTE = 800
+    let TEMPS_ATTENTE = 800   // pause entre chaque mouvement de bras/pince
+
+    // Paramètres temporisation destination()
+    let PAUSE_STOP = 500      // pause après arrêt à destination
+    let PAUSE_RECUL = 500     // durée du recul avant demi-tour
+
+    // Sens du demi-tour : false = gauche/Counterclockwise (comportement original)
+    let RETOUR_DROITE = false
 
     let sensGauche = dadabit.Oriention.Counterclockwise
     let sensDroite = dadabit.Oriention.Clockwise
-
-    // Amélioration 3 : sens du demi-tour configurable
-    // false = gauche (comportement original), true = droite
-    let RETOUR_DROITE = false
 
     // ─────────────────────────────────────────
     // FONCTIONS INTERNES (privées)
@@ -68,18 +71,15 @@ namespace msmSmartTools {
 
     function detectionStable(): boolean {
         let x = wondercam.XOfColorId(wondercam.Options.Pos_X, ID_CUBE)
-
         if (wondercam.isDetectedColorId(ID_CUBE) && x >= X_MIN && x <= X_MAX) {
             compteurStable += 1
         } else {
             compteurStable = 0
         }
-
         if (compteurStable >= SEUIL_VALIDATION) {
             compteurStable = 0
             return true
         }
-
         return false
     }
 
@@ -150,12 +150,33 @@ namespace msmSmartTools {
         compteurStable = 0
     }
 
+    //% block="régler pause stop destination %ms ms"
+    //% ms.defl=500
+    //% group="Réglages"
+    export function reglerPauseStop(ms: number): void {
+        PAUSE_STOP = ms
+    }
+
+    //% block="régler pause recul %ms ms"
+    //% ms.defl=500
+    //% group="Réglages"
+    export function reglerPauseRecul(ms: number): void {
+        PAUSE_RECUL = ms
+    }
+
+    //% block="régler pause attente bras-pince %ms ms"
+    //% ms.defl=800
+    //% group="Réglages"
+    export function reglerPauseAttente(ms: number): void {
+        TEMPS_ATTENTE = ms
+    }
+
     //% block="régler sens demi-tour droite %droite"
     //% droite.shadow="toggleYesNo"
     //% droite.defl=false
     //% group="Réglages"
-    // false = gauche (comportement original qui fonctionnait)
-    // true  = droite (si la piste est inversée)
+    // false = gauche = Counterclockwise (comportement original)
+    // true  = droite = Clockwise
     export function reglerSensRetour(droite: boolean): void {
         RETOUR_DROITE = droite
     }
@@ -274,22 +295,16 @@ namespace msmSmartTools {
     //% group="Vision"
     export function approcherCube(): void {
         let timeout = 0
-
         while (timeout < 200) {
             wondercam.UpdateResult()
-
             if (!wondercam.isDetectedColorId(ID_CUBE)) {
                 break
             }
-
             suiviDeLigne()
-
             let y = wondercam.XOfColorId(wondercam.Options.Pos_Y, ID_CUBE)
-
             if (y >= Y_APPROCHE) {
                 break
             }
-
             timeout += 1
             basic.pause(20)
         }
@@ -303,7 +318,7 @@ namespace msmSmartTools {
     //% group="Manipulation"
     export function attraperCube(): void {
         arreterRobot()
-        basic.pause(300)
+        basic.pause(PAUSE_STOP)
         brasEnBas()
         basic.pause(TEMPS_ATTENTE)
         fermerPince()
@@ -346,13 +361,12 @@ namespace msmSmartTools {
     }
 
     // ─────────────────────────────────────────
-    // destination() : logique originale + 3 améliorations
+    // destination() : fidèle au code original
     //
-    // ✅ Amélioration 1 : timeout 400×20ms = 8s (évite boucle infinie)
-    // ✅ Amélioration 2 : arrêt 150ms entre recul et demi-tour
-    // ✅ Amélioration 3 : sens demi-tour configurable (défaut = gauche)
-    // 🔒 Inchangé       : recul fixe 500ms vitesse 44 (original)
-    // 🔒 Inchangé       : condition S3&&S4&&!S1&&!S2 (originale)
+    // Seuls ajouts par rapport à l'original :
+    //   - PAUSE_STOP  (défaut 500ms) remplace basic.pause(500) fixe
+    //   - PAUSE_RECUL (défaut 500ms) remplace basic.pause(500) fixe
+    //   - RETOUR_DROITE (défaut false) pour changer le sens si besoin
     // ─────────────────────────────────────────
     //% block="gérer la destination"
     //% group="Mission"
@@ -360,56 +374,44 @@ namespace msmSmartTools {
 
         // ── 1. STOP ───────────────────────────────────────────────
         arreterRobot()
-        basic.pause(500)
+        basic.pause(PAUSE_STOP)
 
-        // ── 2. DÉPÔT DU CUBE ─────────────────────────────────────
+        // ── 2. DÉPÔT DU CUBE (si modeMission = 1) ────────────────
         if (modeMission == 1) {
             deposerCube()
         }
 
-        // ── 3. RECUL 500ms vitesse 44 — identique au code original
+        // ── 3. RECUL vitesse 44 pendant PAUSE_RECUL ms ───────────
+        // Dans l'original : Clockwise sur tous = recul selon câblage
         reculer(vitesseCorrection)
-        basic.pause(500)
+        basic.pause(PAUSE_RECUL)
 
-        // ✅ AMÉLIORATION 2 : arrêt bref pour laisser le robot
-        // s'immobiliser complètement avant le demi-tour
-        arreterRobot()
-        basic.pause(150)
-
-        // ── 4. DEMI-TOUR ─────────────────────────────────────────
-        // Condition originale : while (S1 || S2 || !(S3 && S4))
-        // ✅ AMÉLIORATION 1 : timeout 400 itérations = 8 secondes
-        //    pour éviter boucle infinie si robot hors piste
-        // ✅ AMÉLIORATION 3 : sens gauche (défaut original) ou droite
+        // ── 4. DEMI-TOUR jusqu'à S3&&S4&&!S1&&!S2 ────────────────
+        // Original : Counterclockwise sur tous = gauche
+        // RETOUR_DROITE permet d'inverser si besoin (défaut = false = gauche)
         mettreAJourCapteursLigne()
-        let timeout = 0
-        while ((capteur1 || capteur2 || !(capteur3 && capteur4)) && timeout < 400) {
+        while (capteur1 || capteur2 || !(capteur3 && capteur4)) {
             if (RETOUR_DROITE) {
                 tournerADroite(vitesseCorrection)
             } else {
-                tournerAGauche(vitesseCorrection)   // ← comportement original
+                tournerAGauche(vitesseCorrection)
             }
             mettreAJourCapteursLigne()
-            timeout += 1
-            basic.pause(20)
         }
 
         arreterRobot()
-        // La boucle principale reprend le suivi de ligne normalement
     }
 
     //% block="cycle mission complet"
     //% group="Mission"
     export function cycleMission(): void {
         wondercam.UpdateResult()
-
         if (modeMission == 0 && cubeDetecteStable()) {
             arreterRobot()
             jouerBip()
             approcherCube()
             attraperCube()
         }
-
         if (arriveeDetectee()) {
             destination()
         } else {
