@@ -2,6 +2,10 @@
 //% groups='["Réglages","Mouvements","Suivi de ligne","Vision","Manipulation","Mission"]'
 namespace msmSmartTools {
 
+    // ─────────────────────────────────────────
+    // VARIABLES INTERNES
+    // ─────────────────────────────────────────
+
     let capteur1 = false
     let capteur2 = false
     let capteur3 = false
@@ -31,12 +35,90 @@ namespace msmSmartTools {
     let sensGauche = dadabit.Oriention.Counterclockwise
     let sensDroite = dadabit.Oriention.Clockwise
 
+    // ─────────────────────────────────────────
+    // FONCTIONS INTERNES (privées)
+    // ─────────────────────────────────────────
+
     function mettreAJourCapteursLigne(): void {
         capteur1 = dadabit.line_followers(dadabit.LineFollowerSensors.S1, dadabit.LineColor.Black)
         capteur2 = dadabit.line_followers(dadabit.LineFollowerSensors.S2, dadabit.LineColor.Black)
         capteur3 = dadabit.line_followers(dadabit.LineFollowerSensors.S3, dadabit.LineColor.Black)
         capteur4 = dadabit.line_followers(dadabit.LineFollowerSensors.S4, dadabit.LineColor.Black)
     }
+
+    function brasEnHaut(): void {
+        dadabit.setLego270Servo(5, BRAS_HAUT, TEMPS_MOUVEMENT)
+    }
+
+    function brasEnBas(): void {
+        dadabit.setLego270Servo(5, BRAS_BAS, TEMPS_MOUVEMENT)
+    }
+
+    function ouvrirPince(): void {
+        dadabit.setLego270Servo(6, PINCE_OUVERTE, TEMPS_MOUVEMENT)
+    }
+
+    function fermerPince(): void {
+        dadabit.setLego270Servo(6, PINCE_FERMEE, TEMPS_MOUVEMENT)
+    }
+
+    // CORRECTION : compteurStable remis à 0 si la condition échoue
+    function detectionStable(): boolean {
+        let x = wondercam.XOfColorId(wondercam.Options.Pos_X, ID_CUBE)
+
+        if (wondercam.isDetectedColorId(ID_CUBE) && x >= X_MIN && x <= X_MAX) {
+            compteurStable += 1
+        } else {
+            compteurStable = 0   // ← remise à zéro si cube absent ou mal centré
+        }
+
+        if (compteurStable >= SEUIL_VALIDATION) {
+            compteurStable = 0
+            return true
+        }
+
+        return false
+    }
+
+    // ─────────────────────────────────────────
+    // GROUPE : RÉGLAGES
+    // ─────────────────────────────────────────
+
+    //% block="régler vitesses v1 %v1 v2 %v2 v3 %v3"
+    //% v1.defl=55
+    //% v2.defl=44
+    //% v3.defl=33
+    //% group="Réglages"
+    export function reglerVitesses(v1: number, v2: number, v3: number): void {
+        vitesseToutDroit = v1
+        vitesseCorrection = v2
+        petiteVitesse = v3
+    }
+
+    //% block="régler vision ID %id"
+    //% id.defl=1
+    //% group="Réglages"
+    export function reglerVision(id: number): void {
+        ID_CUBE = id
+        compteurStable = 0
+    }
+
+    // CORRECTION : pauses entre bras et pince pour éviter conflits servo
+    //% block="initialiser la mission"
+    //% group="Réglages"
+    export function resetMission(): void {
+        modeMission = 0
+        compteurStable = 0
+        arreterRobot()
+        brasEnHaut()
+        basic.pause(500)    // ← pause indispensable entre les deux servos
+        ouvrirPince()
+        basic.pause(500)
+    }
+
+    // ─────────────────────────────────────────
+    // GROUPE : MOUVEMENTS
+    // ─────────────────────────────────────────
 
     //% block="avancer à vitesse %v"
     //% v.defl=50
@@ -87,6 +169,10 @@ namespace msmSmartTools {
         dadabit.setLego360Servo(4, sensDroite, 0)
     }
 
+    // ─────────────────────────────────────────
+    // GROUPE : SUIVI DE LIGNE
+    // ─────────────────────────────────────────
+
     //% block="suivre la ligne"
     //% group="Suivi de ligne"
     export function suiviDeLigne(): void {
@@ -94,18 +180,18 @@ namespace msmSmartTools {
 
         if (capteur2 && capteur3) {
             avancer(vitesseToutDroit)
-        } else if (capteur1 && capteur2) {
+        } else if (capteur1 && capteur2 && !capteur3 && !capteur4) {
             tournerAGauche(vitesseCorrection)
-        } else if (capteur3 && capteur4) {
+        } else if (capteur3 && capteur4 && !capteur1 && !capteur2) {
             tournerADroite(vitesseCorrection)
-        } else if (capteur1) {
-            tournerAGauche(vitesseCorrection)
-        } else if (capteur4) {
-            tournerADroite(vitesseCorrection)
-        } else if (capteur2) {
+        } else if (capteur2 && !capteur1 && !capteur3 && !capteur4) {
             tournerAGauche(petiteVitesse)
-        } else if (capteur3) {
+        } else if (capteur3 && !capteur1 && !capteur2 && !capteur4) {
             tournerADroite(petiteVitesse)
+        } else if (capteur1 && !capteur2 && !capteur3 && !capteur4) {
+            tournerAGauche(vitesseCorrection)
+        } else if (capteur4 && !capteur1 && !capteur2 && !capteur3) {
+            tournerADroite(vitesseCorrection)
         } else {
             avancer(petiteVitesse)
         }
@@ -118,27 +204,15 @@ namespace msmSmartTools {
         return capteur1 && capteur2 && capteur3 && capteur4
     }
 
-    function detectionStable(): boolean {
-        let x = wondercam.XOfColorId(wondercam.Options.Pos_X, ID_CUBE)
+    // ─────────────────────────────────────────
+    // GROUPE : VISION
+    // ─────────────────────────────────────────
 
-        if (wondercam.isDetectedColorId(ID_CUBE) && x >= X_MIN && x <= X_MAX) {
-            compteurStable += 1
-        } else {
-            compteurStable = 0
-        }
-
-        if (compteurStable >= SEUIL_VALIDATION) {
-            compteurStable = 0
-            return true
-        }
-
-        return false
-    }
-
+    // NOTE : wondercam.UpdateResult() doit être appelé dans la boucle principale
+    // avant d'appeler cubeDetecteStable()
     //% block="cube détecté de façon stable ?"
     //% group="Vision"
     export function cubeDetecteStable(): boolean {
-        wondercam.UpdateResult()
         return detectionStable()
     }
 
@@ -150,7 +224,7 @@ namespace msmSmartTools {
         while (timeout < 200) {
             wondercam.UpdateResult()
 
-            if (!(wondercam.isDetectedColorId(ID_CUBE))) {
+            if (!wondercam.isDetectedColorId(ID_CUBE)) {
                 break
             }
 
@@ -167,21 +241,9 @@ namespace msmSmartTools {
         }
     }
 
-    function brasEnHaut(): void {
-        dadabit.setLego270Servo(5, BRAS_HAUT, TEMPS_MOUVEMENT)
-    }
-
-    function brasEnBas(): void {
-        dadabit.setLego270Servo(5, BRAS_BAS, TEMPS_MOUVEMENT)
-    }
-
-    function ouvrirPince(): void {
-        dadabit.setLego270Servo(6, PINCE_OUVERTE, TEMPS_MOUVEMENT)
-    }
-
-    function fermerPince(): void {
-        dadabit.setLego270Servo(6, PINCE_FERMEE, TEMPS_MOUVEMENT)
-    }
+    // ─────────────────────────────────────────
+    // GROUPE : MANIPULATION
+    // ─────────────────────────────────────────
 
     //% block="attraper le cube"
     //% group="Manipulation"
@@ -193,6 +255,7 @@ namespace msmSmartTools {
         fermerPince()
         basic.pause(TEMPS_ATTENTE)
         brasEnHaut()
+        basic.pause(TEMPS_ATTENTE)
         modeMission = 1
     }
 
@@ -205,8 +268,13 @@ namespace msmSmartTools {
         ouvrirPince()
         basic.pause(TEMPS_ATTENTE)
         brasEnHaut()
+        basic.pause(TEMPS_ATTENTE)
         modeMission = 0
     }
+
+    // ─────────────────────────────────────────
+    // GROUPE : MISSION
+    // ─────────────────────────────────────────
 
     //% block="ne porte pas de cube ?"
     //% group="Mission"
@@ -214,10 +282,14 @@ namespace msmSmartTools {
         return modeMission == 0
     }
 
+    // CORRECTION : utilisation de PlaybackMode.UntilDone pour bloquer jusqu'à la fin du bip
     //% block="bip"
     //% group="Mission"
     export function jouerBip(): void {
-        music.playTone(262, music.beat(BeatFraction.Whole))
+        music.play(
+            music.tonePlayable(262, music.beat(BeatFraction.Whole)),
+            music.PlaybackMode.UntilDone
+        )
     }
 
     //% block="gérer la destination"
@@ -230,11 +302,14 @@ namespace msmSmartTools {
             deposerCube()
         }
 
+        // Recul léger avant de pivoter
         reculer(petiteVitesse)
-        basic.pause(300)
+        basic.pause(400)
+        arreterRobot()
+        basic.pause(200)
 
+        // Pivot à droite jusqu'à retrouver la ligne (capteurs 3+4 uniquement)
         let timeout = 0
-
         while (timeout < 150) {
             mettreAJourCapteursLigne()
             tournerADroite(vitesseCorrection)
@@ -246,11 +321,17 @@ namespace msmSmartTools {
             timeout += 1
             basic.pause(20)
         }
+
+        arreterRobot()
     }
 
-    //% block="cycle mission"
+    // CORRECTION : wondercam.UpdateResult() déplacé dans la boucle principale (main.ts)
+    // Cette fonction reste disponible pour usage autonome si nécessaire
+    //% block="cycle mission complet"
     //% group="Mission"
     export function cycleMission(): void {
+        wondercam.UpdateResult()   // mise à jour caméra intégrée ici pour usage standalone
+
         if (modeMission == 0 && cubeDetecteStable()) {
             arreterRobot()
             jouerBip()
@@ -263,34 +344,5 @@ namespace msmSmartTools {
         } else {
             suiviDeLigne()
         }
-    }
-
-    //% block="régler vitesses v1 %v1 v2 %v2 v3 %v3"
-    //% v1.defl=55
-    //% v2.defl=44
-    //% v3.defl=33
-    //% group="Réglages"
-    export function reglerVitesses(v1: number, v2: number, v3: number): void {
-        vitesseToutDroit = v1
-        vitesseCorrection = v2
-        petiteVitesse = v3
-    }
-
-    //% block="régler vision ID %id"
-    //% id.defl=1
-    //% group="Réglages"
-    export function reglerVision(id: number): void {
-        ID_CUBE = id
-        compteurStable = 0
-    }
-
-    //% block="initialiser la mission"
-    //% group="Réglages"
-    export function resetMission(): void {
-        modeMission = 0
-        compteurStable = 0
-        brasEnHaut()
-        ouvrirPince()
-        arreterRobot()
     }
 }
