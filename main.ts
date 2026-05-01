@@ -400,6 +400,7 @@ namespace msmSmartTools {
         }
 
         arreterRobot()
+        basic.pause(50)
     }
 
     //% block="cycle mission complet"
