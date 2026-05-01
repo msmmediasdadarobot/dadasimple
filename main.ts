@@ -35,9 +35,9 @@ namespace msmSmartTools {
     let sensGauche = dadabit.Oriention.Counterclockwise
     let sensDroite = dadabit.Oriention.Clockwise
 
-    let RETOUR_DROITE = true     // true = pivot à droite après dépôt, false = gauche
-    let DUREE_RECUL = 500        // durée du recul après dépôt (ms)
-    let DUREE_DEMI_TOUR = 800    // durée de la rotation aveugle ~180° (ms) — à calibrer
+    // Amélioration 3 : sens du demi-tour configurable
+    // false = gauche (comportement original), true = droite
+    let RETOUR_DROITE = false
 
     // ─────────────────────────────────────────
     // FONCTIONS INTERNES (privées)
@@ -81,14 +81,6 @@ namespace msmSmartTools {
         }
 
         return false
-    }
-
-    function pivoter(): void {
-        if (RETOUR_DROITE) {
-            tournerADroite(vitesseCorrection)
-        } else {
-            tournerAGauche(vitesseCorrection)
-        }
     }
 
     // ─────────────────────────────────────────
@@ -158,26 +150,14 @@ namespace msmSmartTools {
         compteurStable = 0
     }
 
-    //% block="régler sens retour droite %droite"
+    //% block="régler sens demi-tour droite %droite"
     //% droite.shadow="toggleYesNo"
-    //% droite.defl=true
+    //% droite.defl=false
     //% group="Réglages"
+    // false = gauche (comportement original qui fonctionnait)
+    // true  = droite (si la piste est inversée)
     export function reglerSensRetour(droite: boolean): void {
         RETOUR_DROITE = droite
-    }
-
-    //% block="régler durée recul %ms ms"
-    //% ms.defl=500
-    //% group="Réglages"
-    export function reglerDureeRecul(ms: number): void {
-        DUREE_RECUL = ms
-    }
-
-    //% block="régler durée demi-tour %ms ms"
-    //% ms.defl=800
-    //% group="Réglages"
-    export function reglerDureeDemiTour(ms: number): void {
-        DUREE_DEMI_TOUR = ms
     }
 
     //% block="initialiser la mission"
@@ -365,41 +345,51 @@ namespace msmSmartTools {
         )
     }
 
+    // ─────────────────────────────────────────
+    // destination() : logique originale + 3 améliorations
+    //
+    // ✅ Amélioration 1 : timeout 400×20ms = 8s (évite boucle infinie)
+    // ✅ Amélioration 2 : arrêt 150ms entre recul et demi-tour
+    // ✅ Amélioration 3 : sens demi-tour configurable (défaut = gauche)
+    // 🔒 Inchangé       : recul fixe 500ms vitesse 44 (original)
+    // 🔒 Inchangé       : condition S3&&S4&&!S1&&!S2 (originale)
+    // ─────────────────────────────────────────
     //% block="gérer la destination"
     //% group="Mission"
     export function destination(): void {
 
-        // ── 1. STOP + DÉPÔT ──────────────────────────────────────
+        // ── 1. STOP ───────────────────────────────────────────────
         arreterRobot()
         basic.pause(500)
 
+        // ── 2. DÉPÔT DU CUBE ─────────────────────────────────────
         if (modeMission == 1) {
             deposerCube()
         }
 
-        // ── 2. RECUL POUR DÉGAGER LA ZONE DE DÉPÔT ───────────────
-        reculer(petiteVitesse)
-        basic.pause(DUREE_RECUL)
+        // ── 3. RECUL 500ms vitesse 44 — identique au code original
+        reculer(vitesseCorrection)
+        basic.pause(500)
+
+        // ✅ AMÉLIORATION 2 : arrêt bref pour laisser le robot
+        // s'immobiliser complètement avant le demi-tour
         arreterRobot()
-        basic.pause(200)
+        basic.pause(150)
 
-        // ── 3. DEMI-TOUR PHASE 1 : rotation aveugle ~180° ─────────
-        // On tourne DUREE_DEMI_TOUR ms sans chercher la ligne
-        // pour être sûr d'avoir dépassé la ligne de destination
-        pivoter()
-        basic.pause(DUREE_DEMI_TOUR)
-
-        // ── 4. DEMI-TOUR PHASE 2 : affinage, cherche la ligne ─────
-        // Continue à tourner dans le même sens jusqu'à trouver la ligne
+        // ── 4. DEMI-TOUR ─────────────────────────────────────────
+        // Condition originale : while (S1 || S2 || !(S3 && S4))
+        // ✅ AMÉLIORATION 1 : timeout 400 itérations = 8 secondes
+        //    pour éviter boucle infinie si robot hors piste
+        // ✅ AMÉLIORATION 3 : sens gauche (défaut original) ou droite
+        mettreAJourCapteursLigne()
         let timeout = 0
-        while (timeout < 400) {
-            mettreAJourCapteursLigne()
-            pivoter()
-
-            if (capteur2 || capteur3) {
-                break
+        while ((capteur1 || capteur2 || !(capteur3 && capteur4)) && timeout < 400) {
+            if (RETOUR_DROITE) {
+                tournerADroite(vitesseCorrection)
+            } else {
+                tournerAGauche(vitesseCorrection)   // ← comportement original
             }
-
+            mettreAJourCapteursLigne()
             timeout += 1
             basic.pause(20)
         }
