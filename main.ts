@@ -35,7 +35,9 @@ namespace msmSmartTools {
     let sensGauche = dadabit.Oriention.Counterclockwise
     let sensDroite = dadabit.Oriention.Clockwise
 
-    let RETOUR_DROITE = true   // true = pivot à droite après dépôt, false = gauche
+    let RETOUR_DROITE = true     // true = pivot à droite après dépôt, false = gauche
+    let DUREE_RECUL = 500        // durée du recul après dépôt (ms)
+    let DUREE_DEMI_TOUR = 800    // durée de la rotation aveugle ~180° (ms) — à calibrer
 
     // ─────────────────────────────────────────
     // FONCTIONS INTERNES (privées)
@@ -64,14 +66,13 @@ namespace msmSmartTools {
         dadabit.setLego270Servo(6, PINCE_FERMEE, TEMPS_MOUVEMENT)
     }
 
-    // CORRECTION : compteurStable remis à 0 si la condition échoue
     function detectionStable(): boolean {
         let x = wondercam.XOfColorId(wondercam.Options.Pos_X, ID_CUBE)
 
         if (wondercam.isDetectedColorId(ID_CUBE) && x >= X_MIN && x <= X_MAX) {
             compteurStable += 1
         } else {
-            compteurStable = 0   // ← remise à zéro si cube absent ou mal centré
+            compteurStable = 0
         }
 
         if (compteurStable >= SEUIL_VALIDATION) {
@@ -80,6 +81,14 @@ namespace msmSmartTools {
         }
 
         return false
+    }
+
+    function pivoter(): void {
+        if (RETOUR_DROITE) {
+            tournerADroite(vitesseCorrection)
+        } else {
+            tournerAGauche(vitesseCorrection)
+        }
     }
 
     // ─────────────────────────────────────────
@@ -118,8 +127,8 @@ namespace msmSmartTools {
     //% yApproche.defl=237
     //% group="Réglages"
     export function reglerApproche(yApproche: number): void {
-        if (yApproche > 239) yApproche = 239   // ← garde maximale (résolution caméra)
-        if (yApproche < 0)   yApproche = 0     // ← garde minimale
+        if (yApproche > 239) yApproche = 239
+        if (yApproche < 0)   yApproche = 0
         Y_APPROCHE = yApproche
     }
 
@@ -149,14 +158,28 @@ namespace msmSmartTools {
         compteurStable = 0
     }
 
-    //% block="régler sens retour après dépôt %sens"
-    //% sens.shadow="toggleRightLeft"
+    //% block="régler sens retour droite %droite"
+    //% droite.shadow="toggleYesNo"
+    //% droite.defl=true
     //% group="Réglages"
-    export function reglerSensRetour(sens: boolean): void {
-        RETOUR_DROITE = sens
+    export function reglerSensRetour(droite: boolean): void {
+        RETOUR_DROITE = droite
     }
 
-    // CORRECTION : pauses entre bras et pince pour éviter conflits servo
+    //% block="régler durée recul %ms ms"
+    //% ms.defl=500
+    //% group="Réglages"
+    export function reglerDureeRecul(ms: number): void {
+        DUREE_RECUL = ms
+    }
+
+    //% block="régler durée demi-tour %ms ms"
+    //% ms.defl=800
+    //% group="Réglages"
+    export function reglerDureeDemiTour(ms: number): void {
+        DUREE_DEMI_TOUR = ms
+    }
+
     //% block="initialiser la mission"
     //% group="Réglages"
     export function resetMission(): void {
@@ -164,7 +187,7 @@ namespace msmSmartTools {
         compteurStable = 0
         arreterRobot()
         brasEnHaut()
-        basic.pause(500)    // ← pause indispensable entre les deux servos
+        basic.pause(500)
         ouvrirPince()
         basic.pause(500)
     }
@@ -261,8 +284,6 @@ namespace msmSmartTools {
     // GROUPE : VISION
     // ─────────────────────────────────────────
 
-    // NOTE : wondercam.UpdateResult() doit être appelé dans la boucle principale
-    // avant d'appeler cubeDetecteStable()
     //% block="cube détecté de façon stable ?"
     //% group="Vision"
     export function cubeDetecteStable(): boolean {
@@ -335,7 +356,6 @@ namespace msmSmartTools {
         return modeMission == 0
     }
 
-    // CORRECTION : utilisation de PlaybackMode.UntilDone pour bloquer jusqu'à la fin du bip
     //% block="bip"
     //% group="Mission"
     export function jouerBip(): void {
@@ -348,6 +368,8 @@ namespace msmSmartTools {
     //% block="gérer la destination"
     //% group="Mission"
     export function destination(): void {
+
+        // ── 1. STOP + DÉPÔT ──────────────────────────────────────
         arreterRobot()
         basic.pause(500)
 
@@ -355,31 +377,25 @@ namespace msmSmartTools {
             deposerCube()
         }
 
-        // ✅ Recul guidé : on recule jusqu'à perdre complètement la ligne
-        mettreAJourCapteursLigne()
-        let timeoutRecul = 0
-        while ((capteur1 || capteur2 || capteur3 || capteur4) && timeoutRecul < 100) {
-            reculer(petiteVitesse)
-            mettreAJourCapteursLigne()
-            timeoutRecul += 1
-            basic.pause(20)
-        }
-        basic.pause(300)   // extra pour s'éloigner franchement de la ligne
+        // ── 2. RECUL POUR DÉGAGER LA ZONE DE DÉPÔT ───────────────
+        reculer(petiteVitesse)
+        basic.pause(DUREE_RECUL)
         arreterRobot()
         basic.pause(200)
 
-        // ✅ Pivot configurable (droite ou gauche) avec condition souple + timeout généreux
+        // ── 3. DEMI-TOUR PHASE 1 : rotation aveugle ~180° ─────────
+        // On tourne DUREE_DEMI_TOUR ms sans chercher la ligne
+        // pour être sûr d'avoir dépassé la ligne de destination
+        pivoter()
+        basic.pause(DUREE_DEMI_TOUR)
+
+        // ── 4. DEMI-TOUR PHASE 2 : affinage, cherche la ligne ─────
+        // Continue à tourner dans le même sens jusqu'à trouver la ligne
         let timeout = 0
         while (timeout < 400) {
             mettreAJourCapteursLigne()
+            pivoter()
 
-            if (RETOUR_DROITE) {
-                tournerADroite(vitesseCorrection)
-            } else {
-                tournerAGauche(vitesseCorrection)
-            }
-
-            // Condition souple : dès qu'un capteur central détecte la ligne
             if (capteur2 || capteur3) {
                 break
             }
@@ -389,14 +405,13 @@ namespace msmSmartTools {
         }
 
         arreterRobot()
+        // La boucle principale reprend le suivi de ligne normalement
     }
 
-    // CORRECTION : wondercam.UpdateResult() déplacé dans la boucle principale (main.ts)
-    // Cette fonction reste disponible pour usage autonome si nécessaire
     //% block="cycle mission complet"
     //% group="Mission"
     export function cycleMission(): void {
-        wondercam.UpdateResult()   // mise à jour caméra intégrée ici pour usage standalone
+        wondercam.UpdateResult()
 
         if (modeMission == 0 && cubeDetecteStable()) {
             arreterRobot()
