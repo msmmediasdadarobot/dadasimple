@@ -1,7 +1,7 @@
 //% color=#0EA5E9 icon="\uf02d" block="MSM Smart Tools"
 //% groups='["Settings","Movements","Line following","Vision","Handling","Mission"]'
 namespace msmSmartTools {
-
+ 
     // ─────────────────────────────────────────
     // VARIABLES INTERNES
     // ─────────────────────────────────────────
