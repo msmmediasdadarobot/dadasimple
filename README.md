@@ -272,3 +272,4 @@ Si le robot ne retrouve pas la ligne après dépôt : inverser `RETOUR_DROITE` o
 
 Ce projet est distribué sous licence **MIT**.  
 Réalisé dans le cadre du projet pédagogique **MSM Smart Tools** — DaDa:bit AI Handler.
+for PXT/microbit
