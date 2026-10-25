@@ -1,7 +1,7 @@
 //% color=#0EA5E9 icon="\uf02d" block="MSM Smart Tools"
 //% groups='["Settings","Movements","Line following","Vision","Handling","Mission"]'
 namespace msmSmartTools {
- 
+
     // ─────────────────────────────────────────
     // VARIABLES INTERNES
     // ─────────────────────────────────────────
@@ -85,6 +85,7 @@ namespace msmSmartTools {
     // ─────────────────────────────────────────
 
     //% block="set speeds v1 %v1 v2 %v2 v3 %v3"
+    //% block.loc.fr="régler vitesses v1 %v1 v2 %v2 v3 %v3"
     //% v1.defl=55
     //% v2.defl=44
     //% v3.defl=33
@@ -96,6 +97,7 @@ namespace msmSmartTools {
     }
 
     //% block="set vision ID %id"
+    //% block.loc.fr="régler vision ID %id"
     //% id.defl=1
     //% group="Settings"
     export function reglerVision(id: number): void {
@@ -104,6 +106,7 @@ namespace msmSmartTools {
     }
 
     //% block="set detection zone X_min %xMin X_max %xMax"
+    //% block.loc.fr="régler zone détection X_min %xMin X_max %xMax"
     //% xMin.defl=80
     //% xMax.defl=240
     //% group="Settings"
@@ -113,6 +116,7 @@ namespace msmSmartTools {
     }
 
     //% block="set approach distance Y %yApproche"
+    //% block.loc.fr="régler distance approche Y %yApproche"
     //% yApproche.defl=237
     //% group="Settings"
     export function reglerApproche(yApproche: number): void {
@@ -122,6 +126,7 @@ namespace msmSmartTools {
     }
 
     //% block="set arm up %brasHaut down %brasBas"
+    //% block.loc.fr="régler bras haut %brasHaut bas %brasBas"
     //% brasHaut.defl=-60
     //% brasBas.defl=-5
     //% group="Settings"
@@ -131,6 +136,7 @@ namespace msmSmartTools {
     }
 
     //% block="set gripper open %pinceOuverte closed %pinceFermee"
+    //% block.loc.fr="régler pince ouverte %pinceOuverte fermée %pinceFermee"
     //% pinceOuverte.defl=15
     //% pinceFermee.defl=-25
     //% group="Settings"
@@ -140,6 +146,7 @@ namespace msmSmartTools {
     }
 
     //% block="set validation threshold %seuil"
+    //% block.loc.fr="régler seuil de validation %seuil"
     //% seuil.defl=8
     //% group="Settings"
     export function reglerSeuil(seuil: number): void {
@@ -148,6 +155,7 @@ namespace msmSmartTools {
     }
 
     //% block="set destination stop pause %ms ms"
+    //% block.loc.fr="régler pause stop destination %ms ms"
     //% ms.defl=500
     //% group="Settings"
     export function reglerPauseStop(ms: number): void {
@@ -155,6 +163,7 @@ namespace msmSmartTools {
     }
 
     //% block="set reverse pause %ms ms"
+    //% block.loc.fr="régler pause recul %ms ms"
     //% ms.defl=600
     //% group="Settings"
     export function reglerPauseRecul(ms: number): void {
@@ -162,6 +171,7 @@ namespace msmSmartTools {
     }
 
     //% block="set arm-gripper wait time %ms ms"
+    //% block.loc.fr="régler pause attente bras-pince %ms ms"
     //% ms.defl=800
     //% group="Settings"
     export function reglerPauseAttente(ms: number): void {
@@ -169,6 +179,7 @@ namespace msmSmartTools {
     }
 
     //% block="set U-turn direction right %droite"
+    //% block.loc.fr="régler sens demi-tour droite %droite"
     //% droite.shadow="toggleYesNo"
     //% droite.defl=true
     //% group="Settings"
@@ -179,6 +190,7 @@ namespace msmSmartTools {
     }
 
     //% block="initialize mission"
+    //% block.loc.fr="initialiser la mission"
     //% group="Settings"
     export function resetMission(): void {
         modeMission = 0
@@ -195,6 +207,7 @@ namespace msmSmartTools {
     // ─────────────────────────────────────────
 
     //% block="move forward at speed %v"
+    //% block.loc.fr="avancer à vitesse %v"
     //% v.defl=50
     //% group="Movements"
     export function avancer(v: number): void {
@@ -205,6 +218,7 @@ namespace msmSmartTools {
     }
 
     //% block="move backward at speed %v"
+    //% block.loc.fr="reculer à vitesse %v"
     //% v.defl=50
     //% group="Movements"
     export function reculer(v: number): void {
@@ -215,6 +229,7 @@ namespace msmSmartTools {
     }
 
     //% block="turn left at speed %v"
+    //% block.loc.fr="tourner à gauche vitesse %v"
     //% v.defl=40
     //% group="Movements"
     export function tournerAGauche(v: number): void {
@@ -225,6 +240,7 @@ namespace msmSmartTools {
     }
 
     //% block="turn right at speed %v"
+    //% block.loc.fr="tourner à droite vitesse %v"
     //% v.defl=40
     //% group="Movements"
     export function tournerADroite(v: number): void {
@@ -235,6 +251,7 @@ namespace msmSmartTools {
     }
 
     //% block="stop robot"
+    //% block.loc.fr="arrêter le robot"
     //% group="Movements"
     export function arreterRobot(): void {
         dadabit.setLego360Servo(1, sensGauche, 0)
@@ -248,6 +265,7 @@ namespace msmSmartTools {
     // ─────────────────────────────────────────
 
     //% block="follow line"
+    //% block.loc.fr="suivre la ligne"
     //% group="Line following"
     export function suiviDeLigne(): void {
         mettreAJourCapteursLigne()
@@ -272,6 +290,7 @@ namespace msmSmartTools {
     }
 
     //% block="finish line detected?"
+    //% block.loc.fr="arrivée détectée ?"
     //% group="Line following"
     export function arriveeDetectee(): boolean {
         mettreAJourCapteursLigne()
@@ -283,12 +302,14 @@ namespace msmSmartTools {
     // ─────────────────────────────────────────
 
     //% block="cube detected consistently?"
+    //% block.loc.fr="cube détecté de façon stable ?"
     //% group="Vision"
     export function cubeDetecteStable(): boolean {
         return detectionStable()
     }
 
     //% block="approach cube"
+    //% block.loc.fr="approcher le cube"
     //% group="Vision"
     export function approcherCube(): void {
         let timeout = 0
@@ -312,6 +333,7 @@ namespace msmSmartTools {
     // ─────────────────────────────────────────
 
     //% block="pick up cube"
+    //% block.loc.fr="attraper le cube"
     //% group="Handling"
     export function attraperCube(): void {
         arreterRobot()
@@ -326,6 +348,7 @@ namespace msmSmartTools {
     }
 
     //% block="drop cube"
+    //% block.loc.fr="déposer le cube"
     //% group="Handling"
     export function deposerCube(): void {
         arreterRobot()
@@ -343,12 +366,14 @@ namespace msmSmartTools {
     // ─────────────────────────────────────────
 
     //% block="not carrying a cube?"
+    //% block.loc.fr="ne porte pas de cube ?"
     //% group="Mission"
     export function nePortePasCube(): boolean {
         return modeMission == 0
     }
 
     //% block="beep"
+    //% block.loc.fr="bip"
     //% group="Mission"
     export function jouerBip(): void {
         music.play(
@@ -358,6 +383,7 @@ namespace msmSmartTools {
     }
 
     //% block="handle destination"
+    //% block.loc.fr="gérer la destination"
     //% group="Mission"
     export function destination(): void {
 
@@ -394,6 +420,7 @@ namespace msmSmartTools {
     }
 
     //% block="run complete mission cycle"
+    //% block.loc.fr="cycle mission complet"
     //% group="Mission"
     export function cycleMission(): void {
         wondercam.UpdateResult()

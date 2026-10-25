@@ -1,0 +1,30 @@
+DaDaSimple — Correctif de traduction FR/EN 0.0.46
+==================================================
+
+But : affichage automatique des blocs en FR lorsque MakeCode est en français,
+et en EN lorsque MakeCode est en anglais.
+
+CORRECTIONS
+- Renommage du fichier de traduction :
+  _locales/fr/main-strings.json -> _locales/fr/dadasimple-strings.json
+- Mise à jour correspondante de pxt.json (version 0.0.46).
+- Ajout dans main.ts de 27 annotations « //% block.loc.fr ».
+- Aucune instruction TypeScript, fonction, variable ou calibration changée.
+
+GITHUB :
+1. Sauvegarder les fichiers du dépôt, idéalement sur une branche séparée.
+2. Remplacer main.ts et pxt.json avec les fichiers fournis.
+3. Créer _locales/fr/dadasimple-strings.json en copiant le fichier fourni.
+4. Supprimer la référence ancienne _locales/fr/main-strings.json de pxt.json
+   (déjà fait dans le pxt.json fourni).
+5. Supprimer l'ancien fichier _locales/fr/main-strings.json après vérification.
+6. Commiter.
+7. Dans MakeCode, ouvrir un NOUVEAU projet et importer :
+   https://github.com/msmmediasdadarobot/dadasimple
+8. Vérifier Français (ex.: « suivre la ligne ») puis English (ex.: « follow line »).
+
+IMPORTANT :
+- Un ancien projet peut conserver l'ancienne version de l'extension.
+- Si des groupes restent en anglais, vérifier le fichier JSON et son nom.
+- Ce correctif a été validé statiquement ; pas testé sur le matériel.
+- Le dépôt GitHub n'a pas été modifié par cette génération.
