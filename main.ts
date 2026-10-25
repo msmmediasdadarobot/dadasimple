@@ -1,5 +1,5 @@
 //% color=#0EA5E9 icon="\uf02d" block="MSM Smart Tools"
-//% groups='["Réglages","Mouvements","Suivi de ligne","Vision","Manipulation","Mission"]'
+//% groups='["Settings","Movements","Line following","Vision","Handling","Mission"]'
 namespace msmSmartTools {
 
     // ─────────────────────────────────────────
@@ -84,102 +84,102 @@ namespace msmSmartTools {
     // GROUPE : RÉGLAGES
     // ─────────────────────────────────────────
 
-    //% block="régler vitesses v1 %v1 v2 %v2 v3 %v3"
+    //% block="set speeds v1 %v1 v2 %v2 v3 %v3"
     //% v1.defl=55
     //% v2.defl=44
     //% v3.defl=33
-    //% group="Réglages"
+    //% group="Settings"
     export function reglerVitesses(v1: number, v2: number, v3: number): void {
         vitesseToutDroit = v1
         vitesseCorrection = v2
         petiteVitesse = v3
     }
 
-    //% block="régler vision ID %id"
+    //% block="set vision ID %id"
     //% id.defl=1
-    //% group="Réglages"
+    //% group="Settings"
     export function reglerVision(id: number): void {
         ID_CUBE = id
         compteurStable = 0
     }
 
-    //% block="régler zone détection X_min %xMin X_max %xMax"
+    //% block="set detection zone X_min %xMin X_max %xMax"
     //% xMin.defl=80
     //% xMax.defl=240
-    //% group="Réglages"
+    //% group="Settings"
     export function reglerZoneDetection(xMin: number, xMax: number): void {
         X_MIN = xMin
         X_MAX = xMax
     }
 
-    //% block="régler distance approche Y %yApproche"
+    //% block="set approach distance Y %yApproche"
     //% yApproche.defl=237
-    //% group="Réglages"
+    //% group="Settings"
     export function reglerApproche(yApproche: number): void {
         if (yApproche > 239) yApproche = 239
         if (yApproche < 0)   yApproche = 0
         Y_APPROCHE = yApproche
     }
 
-    //% block="régler bras haut %brasHaut bas %brasBas"
+    //% block="set arm up %brasHaut down %brasBas"
     //% brasHaut.defl=-60
     //% brasBas.defl=-5
-    //% group="Réglages"
+    //% group="Settings"
     export function reglerBras(brasHaut: number, brasBas: number): void {
         BRAS_HAUT = brasHaut
         BRAS_BAS = brasBas
     }
 
-    //% block="régler pince ouverte %pinceOuverte fermée %pinceFermee"
+    //% block="set gripper open %pinceOuverte closed %pinceFermee"
     //% pinceOuverte.defl=15
     //% pinceFermee.defl=-25
-    //% group="Réglages"
+    //% group="Settings"
     export function reglerPince(pinceOuverte: number, pinceFermee: number): void {
         PINCE_OUVERTE = pinceOuverte
         PINCE_FERMEE = pinceFermee
     }
 
-    //% block="régler seuil de validation %seuil"
+    //% block="set validation threshold %seuil"
     //% seuil.defl=8
-    //% group="Réglages"
+    //% group="Settings"
     export function reglerSeuil(seuil: number): void {
         SEUIL_VALIDATION = seuil
         compteurStable = 0
     }
 
-    //% block="régler pause stop destination %ms ms"
+    //% block="set destination stop pause %ms ms"
     //% ms.defl=500
-    //% group="Réglages"
+    //% group="Settings"
     export function reglerPauseStop(ms: number): void {
         PAUSE_STOP = ms
     }
 
-    //% block="régler pause recul %ms ms"
+    //% block="set reverse pause %ms ms"
     //% ms.defl=600
-    //% group="Réglages"
+    //% group="Settings"
     export function reglerPauseRecul(ms: number): void {
         PAUSE_RECUL = ms
     }
 
-    //% block="régler pause attente bras-pince %ms ms"
+    //% block="set arm-gripper wait time %ms ms"
     //% ms.defl=800
-    //% group="Réglages"
+    //% group="Settings"
     export function reglerPauseAttente(ms: number): void {
         TEMPS_ATTENTE = ms
     }
 
-    //% block="régler sens demi-tour droite %droite"
+    //% block="set U-turn direction right %droite"
     //% droite.shadow="toggleYesNo"
     //% droite.defl=true
-    //% group="Réglages"
+    //% group="Settings"
     // true  = droite (valeur calibrée qui fonctionne bien)
     // false = gauche
     export function reglerSensRetour(droite: boolean): void {
         RETOUR_DROITE = droite
     }
 
-    //% block="initialiser la mission"
-    //% group="Réglages"
+    //% block="initialize mission"
+    //% group="Settings"
     export function resetMission(): void {
         modeMission = 0
         compteurStable = 0
@@ -194,9 +194,9 @@ namespace msmSmartTools {
     // GROUPE : MOUVEMENTS
     // ─────────────────────────────────────────
 
-    //% block="avancer à vitesse %v"
+    //% block="move forward at speed %v"
     //% v.defl=50
-    //% group="Mouvements"
+    //% group="Movements"
     export function avancer(v: number): void {
         dadabit.setLego360Servo(1, sensGauche, v)
         dadabit.setLego360Servo(2, sensDroite, v)
@@ -204,9 +204,9 @@ namespace msmSmartTools {
         dadabit.setLego360Servo(4, sensDroite, v)
     }
 
-    //% block="reculer à vitesse %v"
+    //% block="move backward at speed %v"
     //% v.defl=50
-    //% group="Mouvements"
+    //% group="Movements"
     export function reculer(v: number): void {
         dadabit.setLego360Servo(1, sensDroite, v)
         dadabit.setLego360Servo(2, sensGauche, v)
@@ -214,9 +214,9 @@ namespace msmSmartTools {
         dadabit.setLego360Servo(4, sensGauche, v)
     }
 
-    //% block="tourner à gauche vitesse %v"
+    //% block="turn left at speed %v"
     //% v.defl=40
-    //% group="Mouvements"
+    //% group="Movements"
     export function tournerAGauche(v: number): void {
         dadabit.setLego360Servo(1, sensDroite, v)
         dadabit.setLego360Servo(2, sensDroite, v)
@@ -224,9 +224,9 @@ namespace msmSmartTools {
         dadabit.setLego360Servo(4, sensDroite, v)
     }
 
-    //% block="tourner à droite vitesse %v"
+    //% block="turn right at speed %v"
     //% v.defl=40
-    //% group="Mouvements"
+    //% group="Movements"
     export function tournerADroite(v: number): void {
         dadabit.setLego360Servo(1, sensGauche, v)
         dadabit.setLego360Servo(2, sensGauche, v)
@@ -234,8 +234,8 @@ namespace msmSmartTools {
         dadabit.setLego360Servo(4, sensGauche, v)
     }
 
-    //% block="arrêter le robot"
-    //% group="Mouvements"
+    //% block="stop robot"
+    //% group="Movements"
     export function arreterRobot(): void {
         dadabit.setLego360Servo(1, sensGauche, 0)
         dadabit.setLego360Servo(2, sensDroite, 0)
@@ -247,8 +247,8 @@ namespace msmSmartTools {
     // GROUPE : SUIVI DE LIGNE
     // ─────────────────────────────────────────
 
-    //% block="suivre la ligne"
-    //% group="Suivi de ligne"
+    //% block="follow line"
+    //% group="Line following"
     export function suiviDeLigne(): void {
         mettreAJourCapteursLigne()
 
@@ -271,8 +271,8 @@ namespace msmSmartTools {
         }
     }
 
-    //% block="arrivée détectée ?"
-    //% group="Suivi de ligne"
+    //% block="finish line detected?"
+    //% group="Line following"
     export function arriveeDetectee(): boolean {
         mettreAJourCapteursLigne()
         return capteur1 && capteur2 && capteur3 && capteur4
@@ -282,13 +282,13 @@ namespace msmSmartTools {
     // GROUPE : VISION
     // ─────────────────────────────────────────
 
-    //% block="cube détecté de façon stable ?"
+    //% block="cube detected consistently?"
     //% group="Vision"
     export function cubeDetecteStable(): boolean {
         return detectionStable()
     }
 
-    //% block="approcher le cube"
+    //% block="approach cube"
     //% group="Vision"
     export function approcherCube(): void {
         let timeout = 0
@@ -311,8 +311,8 @@ namespace msmSmartTools {
     // GROUPE : MANIPULATION
     // ─────────────────────────────────────────
 
-    //% block="attraper le cube"
-    //% group="Manipulation"
+    //% block="pick up cube"
+    //% group="Handling"
     export function attraperCube(): void {
         arreterRobot()
         basic.pause(PAUSE_STOP)
@@ -325,8 +325,8 @@ namespace msmSmartTools {
         modeMission = 1
     }
 
-    //% block="déposer le cube"
-    //% group="Manipulation"
+    //% block="drop cube"
+    //% group="Handling"
     export function deposerCube(): void {
         arreterRobot()
         brasEnBas()
@@ -342,13 +342,13 @@ namespace msmSmartTools {
     // GROUPE : MISSION
     // ─────────────────────────────────────────
 
-    //% block="ne porte pas de cube ?"
+    //% block="not carrying a cube?"
     //% group="Mission"
     export function nePortePasCube(): boolean {
         return modeMission == 0
     }
 
-    //% block="bip"
+    //% block="beep"
     //% group="Mission"
     export function jouerBip(): void {
         music.play(
@@ -357,7 +357,7 @@ namespace msmSmartTools {
         )
     }
 
-    //% block="gérer la destination"
+    //% block="handle destination"
     //% group="Mission"
     export function destination(): void {
 
@@ -393,7 +393,7 @@ namespace msmSmartTools {
         basic.pause(50)
     }
 
-    //% block="cycle mission complet"
+    //% block="run complete mission cycle"
     //% group="Mission"
     export function cycleMission(): void {
         wondercam.UpdateResult()
